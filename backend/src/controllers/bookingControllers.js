@@ -1,0 +1,147 @@
+import Booking from "../models/bookingModel.js";
+
+export const getBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      {
+        $lookup: {
+          from: "salons",
+          localField: "salonId",
+          foreignField: "_id",
+          as: "salon",
+        },
+      },
+      {
+        $lookup: {
+          from: "employees",
+          localField: "employeeId",
+          foreignField: "_id",
+          as: "employee",
+        },
+      },
+      {
+        $lookup: {
+          from: "services",
+          localField: "services",
+          foreignField: "_id",
+          as: "services",
+        },
+      },
+
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$salon", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$employee", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          bookingId: { $toString: "$_id" },
+          date: 1,
+          time: 1,
+          totalPrice: 1,
+          totalDuration: 1,
+          status: 1,
+
+          customer: {
+            _id: "$customer._id",
+            fullName: "$customer.fullName",
+          },
+
+          salon: {
+            _id: "$salon._id",
+            salonName: "$salon.salonName",
+          },
+
+          employee: {
+            _id: "$employee._id",
+            fullName: "$employee.fullName",
+          },
+
+          services: {
+            $map: {
+              input: "$services",
+              as: "service",
+              in: {
+                _id: "$$service._id",
+                name: "$$service.name",
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+export const createBooking = async (req, res) => {
+  try {
+    const {
+      customerId,
+      salonId,
+      employeeId,
+      serviceId,
+      date,
+      time,
+      totalPrice,
+      totalDuration,
+    } = req.body;
+    if (
+      !customerId ||
+      !salonId ||
+      !employeeId ||
+      !serviceId ||
+      (Array.isArray(serviceId) && serviceId.length === 0) ||
+      !date ||
+      !time ||
+      !totalPrice ||
+      !totalDuration
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    console.log("Creating booking with serviceId:", serviceId);
+    const newBooking = await Booking.create({
+      customerId,
+      salonId,
+      employeeId,
+      services: Array.isArray(serviceId) ? serviceId : [serviceId],
+      date,
+      time,
+      totalPrice,
+      totalDuration,
+    });
+    res
+      .status(201)
+      .json({ message: "Booking created successfully", booking: newBooking });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+    console.error(e);
+  }
+};
+export const updateBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const booking = await Booking.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true },
+    );
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    res.status(200).json(booking);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
