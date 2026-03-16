@@ -4,9 +4,6 @@ import {
     RiseOutlined,
     TeamOutlined,
     CalendarOutlined,
-    AppstoreOutlined,
-    UserOutlined,
-    FormOutlined,
 } from "@ant-design/icons";
 import Sidebar from "../../components/Sidebar";
 import StatCard from "../../components/StatCard";
@@ -17,14 +14,10 @@ import { useEffect, useState } from "react";
 const { Content } = Layout;
 
 export default function DashboardLayout() {
-    const menuItems = [
-        { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/superAdmin" },
-        { key: "companies", icon: <BankOutlined />, label: "Companies", path: "/superAdmin/companies" },
-        { key: "users", icon: <UserOutlined />, label: "Users", path: "/superAdmin/users" },
-        { key: "requests", icon: <FormOutlined />, label: "Requests", path: "/superAdmin/Requests" },
-    ];
+
     const [users, setUsers] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
+    const [bookings, setBookings] = useState<any[]>([]);
     const load = async () => {
         const response = await fetch("http://localhost:3500/api/auth/salon", {
             headers: {
@@ -36,25 +29,28 @@ export default function DashboardLayout() {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
         });
+        const bookingResponse = await fetch("http://localhost:3500/api/auth/bookings", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        })
         const data = await response.json();
         const users = await userResponse.json();
-       
-       
+        const bookings = await bookingResponse.json();
+
         setUsers(users);
         setCompanies(data.filter((salon: any) => salon.isApproved));
+        setBookings(bookings);
     };
-    useEffect(()=>{
+    useEffect(() => {
         load();
-    },[])
+    }, [])
+    const totalRevenue = bookings.reduce((acc, booking) => acc + booking.totalPrice, 0);
 
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={menuItems}
-                userName="Super Admin"
-                userRole="Superadmin"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <header className="mb-6">
@@ -69,25 +65,25 @@ export default function DashboardLayout() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <StatCard
                         title="Total Companies"
-                        value={companies.length}
+                        value={companies.length.toString()}
                         change="+3 this month"
                         icon={<BankOutlined />}
                     />
                     <StatCard
                         title="Total Users"
-                        value={users.length}
+                        value={users.length.toString()}
                         change="+156 this month"
                         icon={<TeamOutlined />}
                     />
                     <StatCard
                         title="Total Bookings"
-                        value="12,493"
+                        value={bookings.length.toString()}
                         change="+1,203 this month"
                         icon={<CalendarOutlined />}
                     />
                     <StatCard
                         title="Revenue"
-                        value="$89,450"
+                        value={`₹${totalRevenue.toFixed(2)}`}
                         change="+12% vs last month"
                         icon={<RiseOutlined />}
                     />

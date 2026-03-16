@@ -8,7 +8,7 @@ const { Content } = Layout;
 
 type TabType = "all" | "upcoming" | "completed" | "cancelled";
 
-type BookingStatus = "Pending" | "confirmed" | "completed" | "cancelled";
+type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 interface Booking {
     id: string;
@@ -96,8 +96,7 @@ function EmployeeBooking() {
 
                 price: b.totalPrice,
 
-                status:
-                    b.status.charAt(0).toUpperCase() + b.status.slice(1),
+                status: b.status,
             }));
 
             setData(bookingData);
@@ -182,7 +181,7 @@ function EmployeeBooking() {
             render: (status: BookingStatus) => (
                 <Tag
                     color={
-                        status === "Pending"
+                        status === "pending"
                             ? "gold"
                             : status === "confirmed"
                                 ? "green"
@@ -233,11 +232,7 @@ function EmployeeBooking() {
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={menuItems}
-                userName="Employee User"
-                userRole="Employee"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <h1 className="text-3xl font-semibold mb-1">My Bookings</h1>
@@ -290,7 +285,7 @@ function EmployeeBooking() {
                 title="Booking Details"
                 onCancel={() => setViewData(null)}
                 footer={[
-                    ...(viewData?.status === "Pending"
+                    ...(viewData?.status === "pending"
                         ? [
                             <Button
                                 key="confirm"

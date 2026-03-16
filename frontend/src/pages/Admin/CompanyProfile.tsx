@@ -1,17 +1,24 @@
 import Sidebar from "../../components/Sidebar";
-import { Layout, Button, Input, Checkbox, TimePicker, message } from "antd";
 import {
-    AppstoreOutlined,
-    CalendarOutlined,
-    ScissorOutlined,
-    TeamOutlined,
-    ApartmentOutlined,
+    Layout,
+    Button,
+    Input,
+    Checkbox,
+    TimePicker,
+    message,
+    Upload,
+    Avatar,
+} from "antd";
+
+import {
     EditOutlined,
     EnvironmentOutlined,
     PhoneOutlined,
     MailOutlined,
     ClockCircleOutlined,
+    UploadOutlined,
 } from "@ant-design/icons";
+
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
@@ -23,6 +30,7 @@ interface CompanyInfo {
     address: string;
     phone: string;
     email: string;
+    logoUrl?: string;
 }
 
 interface WorkingHour {
@@ -33,130 +41,144 @@ interface WorkingHour {
 }
 
 function CompanyProfile() {
-    const menuItems = [
-        { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/admin" },
-        { key: "bookings", icon: <CalendarOutlined />, label: "Bookings", path: "/admin/bookings" },
-        { key: "services", icon: <ScissorOutlined />, label: "Services", path: "/admin/services" },
-        { key: "employees", icon: <TeamOutlined />, label: "Employees", path: "/admin/employees" },
-        {
-            key: "companyProfile",
-            icon: <ApartmentOutlined />,
-            label: "Company Profile",
-            path: "/admin/company-profile",
-        },
-    ];
+   
 
-
-
-
-    const initialHours: WorkingHour[] = [
-        { day: "Monday", open: true, start: "09:00", end: "18:00" },
-        { day: "Tuesday", open: true, start: "09:00", end: "18:00" },
-        { day: "Wednesday", open: true, start: "09:00", end: "18:00" },
-        { day: "Thursday", open: true, start: "09:00", end: "20:00" },
-        { day: "Friday", open: true, start: "09:00", end: "20:00" },
-        { day: "Saturday", open: true, start: "10:00", end: "17:00" },
-        { day: "Sunday", open: false, start: "10:30", end: "16:00" },
-    ];
     const [editMode, setEditMode] = useState(false);
     const [info, setInfo] = useState<CompanyInfo | null>(null);
-    const [workingHours, setWorkingHours] =
-        useState<WorkingHour[]>(initialHours);
+    const [workingHours, setWorkingHours] = useState<WorkingHour[]>([]);
+    const [salonId, setSalonId] = useState("");
 
-    const [salonId, setSalonId] = useState<string>("");
+    // get salon id
     useEffect(() => {
         const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
         if (storedUser.role === "Admin" && storedUser.salonId) {
             setSalonId(storedUser.salonId);
         }
     }, []);
+    console.log(salonId)
+
     useEffect(() => {
         if (salonId) {
             loadCompanyInfo();
         }
     }, [salonId]);
 
-
+    // load salon info
     const loadCompanyInfo = async () => {
-        const response = await fetch("http://localhost:3500/api/auth/salon", {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-        });
-        const data = await response.json();
-        const salon = data.filter((s: any) => s._id === salonId);
-        if (salon && salon.length > 0) {
-            setInfo({
-                name: salon[0].salonName,
-                description: salon[0].description,
-                address: salon[0].address,
-                phone: salon[0].phone,
-                email: salon[0].email,
-            });
-            const hoursMap = salon[0].hours || {};
-            const parsedHours: WorkingHour[] = initialHours.map(h => {
-                const dayKey = h.day.substring(0, 3);
-                const hourStr = hoursMap[dayKey];
-                if (hourStr && hourStr !== 'Closed') {
-                    const [start, end] = hourStr.split(' - ');
-                    return { ...h, open: true, start, end };
-                } else {
-                    return { ...h, open: false };
-                }
-            });
-            setWorkingHours(parsedHours);
-        }
-    }
-
-    const handleSave = async () => {
-        const id = salonId
-        const updatedInfo = {
-            name: info?.name,
-            description: info?.description,
-            address: info?.address,
-            phone: info?.phone,
-            email: info?.email,
-            workingHours: workingHours.map(h => ({
-                day: h.day,
-                open: h.open,
-                start: h.start,
-                end: h.end,
-            })),
-        };
         try {
-            const response = await fetch(`http://localhost:3500/api/auth/salon/${id}`, {
-                method: "PATCH",
+            const response = await fetch("http://localhost:3500/api/auth/salon", {
                 headers: {
-                    "Content-Type": "application/json",
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
-                body: JSON.stringify(updatedInfo),
             });
+
             const data = await response.json();
+            console.log(data)
+
+            const salon = data.find((s: any) => s._id === salonId);
+
+            if (!salon) return;
+
+            setInfo({
+                name: salon.salonName,
+                description: salon.description,
+                address: salon.address,
+                phone: salon.phone,
+                email: salon.email,
+                logoUrl: salon.logo,
+            });
+
+            const hoursMap = salon.hours || {};
+
+            const parsedHours: WorkingHour[] = Object.keys(hoursMap).map((dayKey) => {
+                const hourStr = hoursMap[dayKey];
+
+                if (hourStr && hourStr !== "Closed") {
+                    const [start, end] = hourStr.split(" - ");
+
+                    return {
+                        day: dayKey,
+                        open: true,
+                        start,
+                        end,
+                    };
+                }
+
+                return {
+                    day: dayKey,
+                    open: false,
+                    start: "",
+                    end: "",
+                };
+            });
+
+            setWorkingHours(parsedHours);
+        } catch (error) {
+            message.error("Failed to load company info");
+        }
+    };
+
+    // save profile
+    const handleSave = async () => {
+        if (!info) return;
+
+        const hoursPayload: Record<string, string> = {};
+
+        workingHours.forEach((h) => {
+            const key = h.day.substring(0, 3);
+
+            hoursPayload[key] = h.open ? `${h.start} - ${h.end}` : "Closed";
+        });
+
+        const updatedInfo = {
+            salonName: info.name,
+            description: info.description,
+            address: info.address,
+            phone: info.phone,
+            email: info.email,
+            hours: hoursPayload,
+        };
+
+        try {
+            const response = await fetch(
+                `http://localhost:3500/api/auth/salon/${salonId}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                    body: JSON.stringify(updatedInfo),
+                }
+            );
+
+            const data = await response.json();
+
             if (response.ok) {
                 message.success("Company profile updated successfully");
                 setEditMode(false);
+                loadCompanyInfo();
             } else {
-                message.error(data.message || "Failed to update profile");
+                message.error(data.message || "Update failed");
             }
-        } catch (error) {
-            message.error("An error occurred while updating profile");
+        } catch {
+            message.error("Server error");
         }
-
-
     };
+
     const handleCancel = async () => {
         await loadCompanyInfo();
         setEditMode(false);
-        message.info("Changes discarded");
     };
 
+    // change working hours
     const handleHoursChange = (
         index: number,
         key: keyof WorkingHour,
         value: string | boolean
     ) => {
-        setWorkingHours(prev => {
+        setWorkingHours((prev) => {
             const updated = [...prev];
             updated[index] = { ...updated[index], [key]: value };
             return updated;
@@ -164,113 +186,178 @@ function CompanyProfile() {
     };
 
     return (
-        <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar items={menuItems} userName="Admin User" userRole="Admin" />
-
-            <Content className="p-4 md:p-6 md:ml-64">
-                <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                    <h1 className="text-xl md:text-2xl font-semibold ">
-                        Company Profile
-                    </h1>
+        <Layout className="min-h-screen bg-slate-100">
+            <Sidebar />
+            <Content className="p-6 md:ml-64">
+                <header className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-semibold">Company Profile</h1>
 
                     {!editMode && (
                         <Button
                             type="primary"
                             icon={<EditOutlined />}
                             onClick={() => setEditMode(true)}
-                            rootClassName="!bg-blue-500 !rounded-xl"
                         >
                             Edit Profile
                         </Button>
                     )}
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid lg:grid-cols-2 gap-6">
+
+                    {/* BASIC INFO */}
+
                     <div className="bg-white shadow rounded-xl p-5">
+
                         <h2 className="text-lg font-semibold mb-4">
                             Basic Information
                         </h2>
 
                         <div className="space-y-4">
+
                             <div>
-                                <label className="font-medium text-sm">
-                                    Company Name
-                                </label>
+                                <label>Company Name</label>
                                 <Input
                                     disabled={!editMode}
                                     value={info?.name || ""}
-                                    onChange={(e) => setInfo(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                    onChange={(e) =>
+                                        setInfo((prev) =>
+                                            prev ? { ...prev, name: e.target.value } : prev
+                                        )
+                                    }
                                 />
                             </div>
 
                             <div>
-                                <label className="font-medium text-sm">
-                                    Description
-                                </label>
+                                <label>Description</label>
                                 <Input.TextArea
                                     rows={3}
                                     disabled={!editMode}
                                     value={info?.description}
-                                    onChange={(e) => setInfo(prev => prev ? { ...prev, description: e.target.value } : null)}
+                                    onChange={(e) =>
+                                        setInfo((prev) =>
+                                            prev
+                                                ? { ...prev, description: e.target.value }
+                                                : prev
+                                        )
+                                    }
                                 />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="flex items-center gap-1 font-medium text-sm">
-                                        <EnvironmentOutlined /> Address
-                                    </label>
-                                    <Input
-                                        disabled={!editMode}
-                                        value={info?.address}
-                                        onChange={(e) => setInfo(prev => prev ? { ...prev, address: e.target.value } : null)}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-1 font-medium text-sm">
-                                        <PhoneOutlined /> Phone
-                                    </label>
-                                    <Input
-                                        disabled={!editMode}
-                                        value={info?.phone}
-                                        onChange={(e) => setInfo(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                                    />
-                                </div>
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-1 font-medium text-sm">
+                                <label>
+                                    <EnvironmentOutlined /> Address
+                                </label>
+
+                                <Input
+                                    disabled={!editMode}
+                                    value={info?.address}
+                                    onChange={(e) =>
+                                        setInfo((prev) =>
+                                            prev
+                                                ? { ...prev, address: e.target.value }
+                                                : prev
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label>
+                                    <PhoneOutlined /> Phone
+                                </label>
+
+                                <Input
+                                    disabled={!editMode}
+                                    value={info?.phone}
+                                    onChange={(e) =>
+                                        setInfo((prev) =>
+                                            prev ? { ...prev, phone: e.target.value } : prev
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label>
                                     <MailOutlined /> Email
                                 </label>
+
                                 <Input
                                     disabled={!editMode}
                                     value={info?.email}
-                                    onChange={(e) => setInfo(prev => prev ? { ...prev, email: e.target.value } : null)}
+                                    onChange={(e) =>
+                                        setInfo((prev) =>
+                                            prev ? { ...prev, email: e.target.value } : prev
+                                        )
+                                    }
                                 />
+                            </div>
+
+                            {/* LOGO */}
+
+                            <div>
+                                <label>
+                                    <UploadOutlined /> Company Logo
+                                </label>
+
+                                <Upload
+                                    name="logo"
+                                    action={`http://localhost:3500/api/auth/salon/logo/${salonId}`}
+                                    headers={{
+                                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                    }}
+                                    showUploadList={false}
+                                    disabled={!editMode}
+                                    onChange={(infoFile) => {
+                                        if (infoFile.file.status === "done") {
+                                            message.success("Logo uploaded");
+                                            loadCompanyInfo();
+                                        }
+                                        if (infoFile.file.status === "error") {
+                                            message.error("Upload failed");
+                                        }
+                                    }}
+                                >
+                                    {info?.logoUrl ? (
+                                        <Avatar
+                                            src={`http://localhost:3500/${info.logoUrl}`}
+                                            size={100}
+                                            shape="square"
+                                        />
+                                    ) : (
+                                        <Button icon={<UploadOutlined />}>
+                                            Upload Logo
+                                        </Button>
+                                    )}
+                                </Upload>
                             </div>
                         </div>
                     </div>
 
+                    {/* WORKING HOURS */}
+
                     <div className="bg-white shadow rounded-xl p-5">
+
                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                             <ClockCircleOutlined /> Working Hours
                         </h2>
 
                         <div className="space-y-3">
+
                             {workingHours.map((item, index) => (
+
                                 <div
                                     key={item.day}
-                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border border-gray-200 rounded-lg p-3"
+                                    className="flex items-center justify-between border rounded-lg p-3"
                                 >
-                                    <div className="font-medium">
-                                        {item.day}
-                                    </div>
+
+                                    <div className="font-medium">{item.day}</div>
 
                                     <Checkbox
                                         disabled={!editMode}
                                         checked={item.open}
-                                        onChange={e =>
+                                        onChange={(e) =>
                                             handleHoursChange(
                                                 index,
                                                 "open",
@@ -283,40 +370,41 @@ function CompanyProfile() {
 
                                     {item.open ? (
                                         <div className="flex items-center gap-2">
+
                                             <TimePicker
                                                 disabled={!editMode}
-                                                value={dayjs(
-                                                    item.start,
-                                                    "HH:mm"
-                                                )}
+                                                value={
+                                                    item.start
+                                                        ? dayjs(item.start, "HH:mm")
+                                                        : null
+                                                }
                                                 format="hh:mm A"
                                                 use12Hours
-                                                onChange={t =>
+                                                onChange={(t) =>
                                                     handleHoursChange(
                                                         index,
                                                         "start",
-                                                        t
-                                                            ? t.format("HH:mm")
-                                                            : item.start
+                                                        t ? t.format("HH:mm") : ""
                                                     )
                                                 }
                                             />
+
                                             <span>to</span>
+
                                             <TimePicker
                                                 disabled={!editMode}
-                                                value={dayjs(
-                                                    item.end,
-                                                    "HH:mm"
-                                                )}
+                                                value={
+                                                    item.end
+                                                        ? dayjs(item.end, "HH:mm")
+                                                        : null
+                                                }
                                                 format="hh:mm A"
                                                 use12Hours
-                                                onChange={t =>
+                                                onChange={(t) =>
                                                     handleHoursChange(
                                                         index,
                                                         "end",
-                                                        t
-                                                            ? t.format("HH:mm")
-                                                            : item.end
+                                                        t ? t.format("HH:mm") : ""
                                                     )
                                                 }
                                             />
@@ -336,11 +424,12 @@ function CompanyProfile() {
                     <div className="flex gap-3 mt-6">
                         <Button
                             type="primary"
-                            rootClassName="!bg-green-600"
+                            className="bg-green-600"
                             onClick={handleSave}
                         >
                             Save Changes
                         </Button>
+
                         <Button danger onClick={handleCancel}>
                             Cancel
                         </Button>

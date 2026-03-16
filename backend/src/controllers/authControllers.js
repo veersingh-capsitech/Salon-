@@ -70,6 +70,7 @@ export const Login = async (req, res) => {
         .status(400)
         .json({ message: "Email and password are required" });
     }
+    console.log(password);
 
     const user = await User.findOne({ email });
 
@@ -91,28 +92,41 @@ export const Login = async (req, res) => {
       secret_key,
       { expiresIn: "1d" },
     );
-    if (user.role === "SuperAdmin") {
-      const allUsers = await User.find().select("-password");
+    if (user.role === "superadmin") {
+      // const allUsers = await User.find().select("-password");
       return res.status(200).json({
         message: "SuperAdmin login successful",
         token,
         role: user.role,
-        users: allUsers,
+
+        user: {
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+        },
+
+        // users: allUsers,
       });
     }
 
     if (user.role === "Admin") {
-      const allUsers = await User.find().select("-password");
+      // const allUsers = await User.find().select("-password");
+      const salon = await Salon.findOne({ email: user.email });
 
       return res.status(200).json({
         message: "Admin login successful",
         token,
         role: user.role,
-        users: allUsers,
-        salonId: user.salonId,
+
+        user: {
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+        },
+        salonId: salon ? salon._id : null,
       });
     }
-    
+
     if (user.role === "employee") {
       const employee = await employeeModel.findOne({ email: user.email });
       if (!employee) {
@@ -123,17 +137,20 @@ export const Login = async (req, res) => {
         message: "Employee login successful",
         token,
         role: user.role,
-        
-        employee: {
+
+        user: {
           id: employee._id,
+          fullName: employee.fullName,
           salonName: salon ? salon.salonName : "N/A",
           services: employee.Services,
-        }
+          role: user.role,
+        },
       });
     }
     return res.status(200).json({
       message: "Login successful",
       token,
+      role: user.role,
       user: {
         id: user._id,
         fullName: user.fullName,

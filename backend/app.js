@@ -31,4 +31,6 @@ app.use("/api/auth", servicesRoute);
 app.use("/api/auth", bookingRoute);
 
 connectDB();
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

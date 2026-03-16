@@ -10,7 +10,7 @@ const Login = () => {
     // const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    
+
 
     const handleSignIn = async () => {
         setLoading(true);
@@ -20,21 +20,20 @@ const Login = () => {
                 headers: {
                     "Content-Type": "application/json",
 
+
                 },
                 body: JSON.stringify({ email, password }),
             });
             const data = await response.json();
-            // console.log("Login response:", data);
-           
 
             if (response.ok) {
-               
+
 
                 message.success("Login successful!");
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("user", JSON.stringify(data));
-                
-                if (data.role === "SuperAdmin") {
+                localStorage.setItem("user", JSON.stringify(data))  ;
+
+                if (data.role === "superadmin") {
                     navigate("/superAdmin");
                 } else if (data.role === "Admin") {
                     navigate("/admin");
@@ -43,6 +42,9 @@ const Login = () => {
                 } else {
                     navigate("/customer");
                 }
+            }
+            else {
+                message.error(data.message || "Login failed. Please try again.");
             }
         } catch (error) {
             message.error("An error occurred. Please try again.");
@@ -60,7 +62,7 @@ const Login = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-100 from-blue-50 to-white px-4">
             <div className="w-full max-w-md">
-                
+
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h2>
                     <p className="text-gray-600">Sign in to manage your bookings</p>
@@ -88,7 +90,7 @@ const Login = () => {
                             <label className="text-sm font-medium text-gray-900">
                                 Password
                             </label>
-                           
+
                         </div>
                         <Input.Password
                             size="large"
@@ -120,7 +122,7 @@ const Login = () => {
                         Sign In →
                     </Button>
                 </div>
-                
+
 
                 <div className="text-center mt-6">
                     <p className="text-gray-600">

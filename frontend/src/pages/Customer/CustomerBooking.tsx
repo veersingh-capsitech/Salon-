@@ -25,6 +25,10 @@ type Booking = {
   date: string;
   time: string;
   status: BookingStatus;
+  address: string;
+  email: string;
+  phone: string;
+  employee: string;
 };
 
 type EnrichedBooking = Booking & {
@@ -38,13 +42,6 @@ function CustomerBooking() {
   const [viewData, setViewData] = useState<EnrichedBooking | null>(null);
   const [loading, setLoading] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
-
-  const menuItems = [
-    { key: "CustomerDashboard", label: "Dashboard", path: "/customer" },
-    { key: "myBookings", label: "My Bookings", path: "/customer/bookings" },
-  ];
-
-  // Get logged in customer id
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
@@ -53,7 +50,6 @@ function CustomerBooking() {
     }
   }, []);
 
-  // Load bookings
   const loadBookings = async () => {
     try {
       setLoading(true);
@@ -78,6 +74,10 @@ function CustomerBooking() {
       const bookingData: Booking[] = customerBookings.map((b: any) => ({
         id: b._id,
         salon: b.salon?.salonName || "",
+        address: b.salon?.address || "",
+        email: b.salon?.email || "",
+        phone: b.salon?.phone || "",
+        employee: b.employee?.fullName || "",
         services: Array.isArray(b.services)
           ? b.services.map((s: any) => s.name || "")
           : [],
@@ -102,22 +102,21 @@ function CustomerBooking() {
 
   const enriched: EnrichedBooking[] = data.map((b) => ({
     ...b,
-    datetime: new Date(`${b.date}T${b.time}`),
+    datetime: dayjs(`${b.date} ${b.time}`, "YYYY-MM-DD hh:mm A").toDate(),
   }));
 
-  const upcoming = enriched.filter(
-    (b) => b.datetime > now && b.status !== "cancelled"
-  );
+  const filtered = enriched.filter((b) => {
+    if (activeTab === "upcoming")
+      return b.status !== "cancelled" && b.status !== "completed" && b.datetime > now;
 
-  const completed = enriched.filter((b) => b.status === "completed");
+    if (activeTab === "completed")
+      return b.status === "completed";
 
-  const cancelled = enriched.filter((b) => b.status === "cancelled");
+    if (activeTab === "cancelled")
+      return b.status === "cancelled";
 
-  let filtered: EnrichedBooking[] = enriched;
-
-  if (activeTab === "upcoming") filtered = upcoming;
-  if (activeTab === "completed") filtered = completed;
-  if (activeTab === "cancelled") filtered = cancelled;
+    return true;
+  });
 
   const getStatusColor = (status: BookingStatus) => {
     if (status === "confirmed") return "blue";
@@ -126,16 +125,61 @@ function CustomerBooking() {
     return "gold";
   };
 
-  const handleCancelConfirm = () => {
-    setData((prev) =>
-      prev.map((b) =>
-        b.id === cancelId ? { ...b, status: "cancelled" } : b
-      )
-    );
-    setCancelId(null);
-    setViewData(null);
-    message.success("Booking cancelled");
+  const handleCancelConfirm = async () => {
+    if (!cancelId) return;
+    try {
+      const res = await fetch(`http://localhost:3500/api/auth/bookings/${cancelId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+
+      if (res.ok) {
+        setData((prev) =>
+          prev.map((b) =>
+            b.id === cancelId ? { ...b, status: "cancelled" } : b
+          )
+        );
+        message.success("Booking cancelled");
+      } else {
+        message.error("Failed to cancel booking");
+      }
+    } catch (error) {
+      message.error("Failed to cancel booking");
+    } finally {
+      setCancelId(null);
+      setViewData(null);
+    }
   };
+  //  const changeStatus = async (id: string, status: BookingStatus) => {
+  //         try {
+  //             await fetch(`http://localhost:3500/api/auth/bookings/${id}`, {
+  //                 method: "PUT",
+  //                 headers: {
+  //                     "Content-Type": "application/json",
+  //                     Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //                 },
+  //                 body: JSON.stringify({ status }),
+  //             });
+
+  //             setData((prev) =>
+  //                 prev.map((b) =>
+  //                     b.id === id ? { ...b, status } : b
+  //                 )
+  //             );
+
+  //             if (viewData?.id === id) {
+  //                 setViewData({ ...viewData, status });
+  //             }
+
+  //             message.success(`Booking ${status}`);
+  //         } catch {
+  //             message.error("Failed to update booking");
+  //         }
+  //     };
 
   const columns = [
     { title: "Salon", dataIndex: "salon" },
@@ -197,7 +241,7 @@ function CustomerBooking() {
 
   return (
     <Layout className="min-h-screen bg-slate-100">
-      <Sidebar items={menuItems} userName="User" userRole="Customer" />
+      <Sidebar />
 
       <Content className="p-4 md:p-6 md:ml-64">
         <header className="mb-6">
@@ -209,7 +253,6 @@ function CustomerBooking() {
           </p>
         </header>
 
-        {/* Tabs */}
         <div className="flex flex-wrap gap-3 mb-4">
           {(["all", "upcoming", "completed", "cancelled"] as TabType[]).map(
             (tab) => (
@@ -240,7 +283,6 @@ function CustomerBooking() {
           }
         />
 
-        {/* Cancel Modal */}
         <Modal
           open={!!cancelId}
           onOk={handleCancelConfirm}
@@ -252,7 +294,6 @@ function CustomerBooking() {
           Are you sure you want to cancel this booking?
         </Modal>
 
-        {/* View Modal */}
         <Modal open={!!viewData} onCancel={() => setViewData(null)} footer={null}>
           {viewData && (
             <div>
@@ -279,11 +320,11 @@ function CustomerBooking() {
                 </div>
 
                 <div className="flex items-center gap-2 sm:col-span-2">
-                  <EnvironmentOutlined /> Salon Address
+                  <EnvironmentOutlined /> {viewData.address}
                 </div>
 
                 <div className="flex items-center gap-2 sm:col-span-2">
-                  <UserOutlined /> Assigned Staff
+                  <UserOutlined /> {viewData.employee}
                 </div>
               </div>
 
@@ -297,11 +338,11 @@ function CustomerBooking() {
 
               <div className="text-sm space-y-1">
                 <div className="flex items-center gap-2">
-                  <PhoneOutlined /> Salon Phone
+                  <PhoneOutlined /> {viewData.phone}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <MailOutlined /> Salon Email
+                  <MailOutlined /> {viewData.email}
                 </div>
               </div>
             </div>

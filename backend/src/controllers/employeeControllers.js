@@ -23,9 +23,9 @@ export const addEmployee = async (req, res) => {
       });
     }
 
-    const existing = await Employee.findOne({ email });
+    const existing = await Employee.findOne({ email, salonId });
     if (existing) {
-      return res.status(409).json({ message: "Email already exists" });
+      return res.status(409).json({ message: "Email already exists for this salon" });
     }
     const User = await Customer.findOne({ email });
     if (User) {

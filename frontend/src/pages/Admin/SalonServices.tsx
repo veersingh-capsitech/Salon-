@@ -1,6 +1,6 @@
 import Sidebar from "../../components/Sidebar";
 import { Layout, Button, Card, Tag, Input, Modal, Form, Switch, InputNumber, message, } from "antd";
-import { AppstoreOutlined, CalendarOutlined, ScissorOutlined, TeamOutlined, ApartmentOutlined, PlusOutlined, SearchOutlined, EditOutlined, ClockCircleOutlined, } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined, EditOutlined, ClockCircleOutlined, } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 
 const { Content } = Layout;
@@ -22,18 +22,6 @@ interface FormFields {
 }
 
 function SalonServices() {
-    const menuItems = [
-        { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/admin" },
-        { key: "bookings", icon: <CalendarOutlined />, label: "Bookings", path: "/admin/bookings" },
-        { key: "services", icon: <ScissorOutlined />, label: "Services", path: "/admin/services" },
-        { key: "employees", icon: <TeamOutlined />, label: "Employees", path: "/admin/employees" },
-        {
-            key: "companyProfile",
-            icon: <ApartmentOutlined />,
-            label: "Company Profile",
-            path: "/admin/company-profile",
-        },
-    ];
     const [salonId, setSalonId] = useState<string | null>(null);
     const [services, setServices] = useState<Service[]>([]);
     const [search, setSearch] = useState("");
@@ -92,8 +80,13 @@ function SalonServices() {
                         body: JSON.stringify(payload),
                     }
                 );
+                const data = await response.json();
 
-                if (!response.ok) throw new Error();
+                if (!response.ok) {
+                    message.error(data.message || "Failed to update service");
+                    return;
+
+                };
 
                 message.success("Service updated successfully");
             } else {
@@ -136,10 +129,11 @@ function SalonServices() {
                 `http://localhost:3500/api/auth/services/${id}`,
                 {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json",
+                    headers: {
+                        "Content-Type": "application/json",
                         Authorization: `Bearer ${localStorage.getItem("token")}`
 
-                     },
+                    },
                     body: JSON.stringify({ status: updatedStatus }),
                 }
             );
@@ -170,9 +164,9 @@ function SalonServices() {
     const filteredServices = services.filter(s =>
         (s.name ?? "").toString().toLowerCase().includes((search ?? "").toString().toLowerCase())
     );
-    return  (
+    return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar items={menuItems} userName="Admin User" userRole="Admin" />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">

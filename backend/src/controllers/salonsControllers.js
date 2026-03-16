@@ -115,6 +115,7 @@ export const updateSalonById = async (req, res) => {
   try {
     const salonId = req.params.id;
     const updateData = req.body;
+    console.log(updateData)
     const salon = await Salon.findByIdAndUpdate(salonId, updateData, { new: true });
     if (!salon) {
       return res.status(404).json({ message: "Salon not found" });

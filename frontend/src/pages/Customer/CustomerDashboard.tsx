@@ -23,7 +23,7 @@ interface Salon {
     hours?: Record<string, string>;
     services?: { id: string; name: string; duration: number; price: number }[];
     employees?: { id: string; name: string }[];
-    
+
 }
 
 const CustomerDashboard: React.FC = () => {
@@ -134,14 +134,7 @@ const CustomerDashboard: React.FC = () => {
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={[
-                    { key: "CustomerDashboard", label: "Dashboard", path: "/customer" },
-                    { key: "myBookings", label: "My Bookings", path: "/customer/bookings" },
-                ]}
-                userName="User"
-                userRole="Customer"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <header className="mb-6">

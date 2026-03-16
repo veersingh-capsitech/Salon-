@@ -1,10 +1,5 @@
 import { Layout, Input, Select, Space, Table, Tag, Modal } from "antd";
-import  {
-    AppstoreOutlined,
-    BankOutlined,
-    UserOutlined,
-    FormOutlined,
-} from "@ant-design/icons";
+
 import Sidebar from "../../components/Sidebar";
 // import { Data } from "../../utills/data";
 import { useEffect, useState } from "react";
@@ -13,12 +8,6 @@ const { Content } = Layout;
 
 function UserDetails() {
 
-    const menuItems = [
-        { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/superAdmin" },
-        { key: "companies", icon: <BankOutlined />, label: "Companies", path: "/superAdmin/companies" },
-        { key: "users", icon: <UserOutlined />, label: "Users", path: "/superAdmin/users" },
-        { key: "requests", icon: <FormOutlined />, label: "Requests", path: "/superAdmin/Requests" },
-    ];
     const [users, setUsers] = useState<any[]>([]);
     const [allUsers, setAllUsers] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -109,11 +98,7 @@ function UserDetails() {
     }
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={menuItems}
-                userName="Super Admin"
-                userRole="Superadmin"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <header className="mb-6">

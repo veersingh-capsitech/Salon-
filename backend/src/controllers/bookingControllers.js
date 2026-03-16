@@ -57,6 +57,9 @@ export const getBookings = async (req, res) => {
           salon: {
             _id: "$salon._id",
             salonName: "$salon.salonName",
+            address: "$salon.address",
+            email: "$salon.email",
+            phone: "$salon.phone",
           },
 
           employee: {
@@ -110,8 +113,12 @@ export const createBooking = async (req, res) => {
     }
 
     console.log("Creating booking with serviceId:", serviceId);
+    // Generate a unique bookingId using uuid to avoid collisions between requests
+    const bookingId = `BKG-${Math.floor(Math.random() * 10000)}`;
+    console.log("Generated bookingId:", bookingId);
     const newBooking = await Booking.create({
       customerId,
+      // bookingId,
       salonId,
       employeeId,
       services: Array.isArray(serviceId) ? serviceId : [serviceId],
@@ -132,6 +139,11 @@ export const updateBooking = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
     const booking = await Booking.findByIdAndUpdate(
       id,
       { status },

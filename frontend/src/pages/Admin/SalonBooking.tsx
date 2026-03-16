@@ -11,11 +11,6 @@ import {
   Spin,
 } from "antd";
 import {
-  AppstoreOutlined,
-  CalendarOutlined,
-  ScissorOutlined,
-  TeamOutlined,
-  ApartmentOutlined,
   EyeOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -139,23 +134,23 @@ function SalonBooking() {
   }, [search, selectedDate, selectedStatus, selectedEmployee, bookings]);
 
 
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      await fetch(
-        `http://localhost:3500/api/auth/bookings/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-          body: JSON.stringify({ status }),
-        }
-      );
+  // const updateStatus = async (id: string, status: string) => {
+  //   try {
+  //     await fetch(
+  //       `http://localhost:3500/api/auth/bookings/${id}`,
+  //       {
+  //         method: "PUT",
+  //         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+  //         body: JSON.stringify({ status }),
+  //       }
+  //     );
 
-      message.success("Status updated");
-      loadBookings();
-    } catch {
-      message.error("Failed to update status");
-    }
-  };
+  //     message.success("Status updated");
+  //     loadBookings();
+  //   } catch {
+  //     message.error("Failed to update status");
+  //   }
+  // };
 
 
 
@@ -211,17 +206,9 @@ function SalonBooking() {
   ];
 
 
-  const menuItems = [
-    { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/admin" },
-    { key: "bookings", icon: <CalendarOutlined />, label: "Bookings", path: "/admin/bookings" },
-    { key: "services", icon: <ScissorOutlined />, label: "Services", path: "/admin/services" },
-    { key: "employees", icon: <TeamOutlined />, label: "Employees", path: "/admin/employees" },
-    { key: "companyProfile", icon: <ApartmentOutlined />, label: "Company Profile", path: "/admin/company-profile" },
-  ];
-
   return (
     <Layout rootClassName="min-h-screen !bg-slate-100">
-      <Sidebar items={menuItems} userName="Admin User" userRole="Admin" />
+      <Sidebar />
 
       <Content className="p-4 md:p-6 md:ml-64">
         <header className="mb-6">

@@ -79,12 +79,10 @@ const salonSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    description:{
+    description: {
       type: String,
       default: "",
-      
-
-    }
+    },
   },
   { timestamps: true },
 );

@@ -10,13 +10,7 @@ import {
   Modal,
   Button,
 } from "antd";
-import {
-  AppstoreOutlined,
-  BankOutlined,
-  UserOutlined,
-  FormOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
+import { DeleteOutlined } from "@ant-design/icons";
 
 interface Company {
   key: string;
@@ -30,13 +24,6 @@ interface Company {
 const { Content } = Layout;
 
 function CompaniesDetails() {
-  const menuItems = [
-    { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/superAdmin" },
-    { key: "companies", icon: <BankOutlined />, label: "Companies", path: "/superAdmin/companies" },
-    { key: "users", icon: <UserOutlined />, label: "Users", path: "/superAdmin/users" },
-    { key: "requests", icon: <FormOutlined />, label: "Requests", path: "/superAdmin/Requests" },
-  ];
-
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -61,9 +48,9 @@ function CompaniesDetails() {
       setCompanies(filteredData);
     }, 1000);
   }
-  useEffect(()=>{
+  useEffect(() => {
     loadCompanies();
-  },[]);
+  }, []);
 
   const defaultWorkingHours: Record<string, string> = {
     Mon: "09:00 - 18:00",
@@ -125,11 +112,7 @@ function CompaniesDetails() {
 
   return (
     <Layout rootClassName="min-h-screen !bg-slate-100">
-      <Sidebar
-        items={menuItems}
-        userName="Super Admin"
-        userRole="Superadmin"
-      />
+      <Sidebar />
 
       <Content className="p-4 md:p-6 md:ml-64">
         <header className="mb-6">

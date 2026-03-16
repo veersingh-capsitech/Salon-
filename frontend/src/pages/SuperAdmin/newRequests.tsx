@@ -1,9 +1,5 @@
 import { Layout, Button, Tag } from "antd";
 import {
-    AppstoreOutlined,
-    BankOutlined,
-    UserOutlined,
-    FormOutlined,
     CheckOutlined,
     CloseOutlined,
 } from "@ant-design/icons";
@@ -53,18 +49,6 @@ function NewRequests() {
     useEffect(() => {
         load();
     }, []);
-
-
-
-
-    const menuItems = [
-        { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/superAdmin" },
-        { key: "companies", icon: <BankOutlined />, label: "Companies", path: "/superAdmin/companies" },
-        { key: "users", icon: <UserOutlined />, label: "Users", path: "/superAdmin/users" },
-        { key: "requests", icon: <FormOutlined />, label: "Requests", path: "/superAdmin/Requests" },
-    ];
-
-
     const handleApprove = async (id: string) => {
         await fetch(`http://localhost:3500/api/auth/salon/${id}/approve`, {
             method: "PATCH",
@@ -90,11 +74,7 @@ function NewRequests() {
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={menuItems}
-                userName="Super Admin"
-                userRole="Superadmin"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <header className="mb-6">
@@ -180,7 +160,7 @@ function NewRequests() {
                                 </Button>
                             </div>
 
-                           
+
                         </div>
                     ))}
                 </div>

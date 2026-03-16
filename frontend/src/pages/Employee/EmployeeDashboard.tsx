@@ -1,22 +1,100 @@
-import { Layout, Card, Table, Tag } from "antd";
+import { Layout, Card, Table, Tag, message } from "antd";
 import Sidebar from "../../components/Sidebar";
-import bookings from "../../utills/EmployeeBooking";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
 
 const { Content } = Layout;
 
-const getDuration = (start: string, end: string) => {
-    const startTime = new Date(`2000-01-01T${start}`);
-    const endTime = new Date(`2000-01-01T${end}`);
-    const diffMs = endTime.getTime() - startTime.getTime();
-    const diffMin = diffMs / 1000 / 60;
-    return diffMin;
+type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+
+interface Booking {
+    id: string;
+    customer: string;
+    date: string;
+    start: string;
+    end: string;
+    services: string[];
+    price: number;
+    status: BookingStatus;
+    Duration: string;
+}
+
+const statusColor: Record<BookingStatus, string> = {
+    pending: "gold",
+    confirmed: "green",
+    completed: "default",
+    cancelled: "red",
 };
 
+
+
 function EmployeeDashboard() {
-    const menuItems = [
-        { key: "dashboard", label: "Dashboard", path: "/employee" },
-        { key: "myBookings", label: "My Bookings", path: "/employee/bookings" },
-    ];
+    const [loading, setLoading] = useState(false);
+    const [employeeId, setEmployeeId] = useState<string | null>(null);
+    const [bookings, setBookings] = useState<Booking[]>([]);
+
+    // Convert start time + duration → end time
+
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+        if (storedUser.role === "employee" && storedUser.employee?.id) {
+
+            setEmployeeId(storedUser.employee.id);
+
+        }
+
+    }, []);
+    // console.log(userName)
+    const loadBookings = async () => {
+        try {
+            setLoading(true);
+
+            const res = await fetch("http://localhost:3500/api/auth/bookings", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+
+            const response = await res.json();
+            // console.log("All Bookings:", response);
+
+            const employeeBookings = response.filter(
+                (b: any) => b.employee?._id === employeeId
+            );
+
+            const bookingData: Booking[] = employeeBookings.map((b: any) => ({
+                id: b.bookingId,
+                customer: b.customer?.fullName || "Unknown",
+
+                date: dayjs(b.date).format("YYYY-MM-DD"),
+
+                start: b.time,
+
+                // end: computeEnd(b.time, b.totalDuration),
+                Duration: b.totalDuration,
+
+                services: Array.isArray(b.services)
+                    ? b.services.map((s: any) => s.name)
+                    : [],
+
+                price: b.totalPrice,
+
+                status: b.status,
+            }));
+
+            setBookings(bookingData);
+        } catch (err) {
+            message.error("Failed to load bookings");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (employeeId) loadBookings();
+    }, [employeeId]);
+
 
     const today = new Date().toDateString();
 
@@ -24,51 +102,42 @@ function EmployeeDashboard() {
         (b) => new Date(b.date).toDateString() === today
     );
 
+    const stats = {
+        total: bookings.length,
+        today: todaysData.length,
+        pending: bookings.filter((b) => b.status === "pending").length,
+        confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    };
+
     const columns = [
         {
             title: "Date & Time",
-            dataIndex: "date",
-            render: (_: any, b: any) => `${b.date} • ${b.start}`,
+            render: (_: any, b: Booking) => `${b.date} • ${b.start}`,
         },
         {
             title: "Customer",
             dataIndex: "customer",
         },
         {
-            title: "Service",
+            title: "Services",
             dataIndex: "services",
             render: (s: string[]) => s.join(", "),
         },
         {
             title: "Duration",
-            render: (_: any, b: any) => {
-                const mins = getDuration(b.start, b.end);
-                if (mins >= 60) {
-                    const h = Math.floor(mins / 60);
-                    const m = mins % 60;
-                    return m ? `${h}h ${m}m` : `${h}h`;
-                }
-                return `${mins}m`;
-            },
+            dataIndex: "Duration",
+
         },
         {
             title: "Price",
             dataIndex: "price",
-            render: (p: number) => `$${p}`,
+            // render: (p: number) => `$${p}`,
         },
         {
             title: "Status",
             dataIndex: "status",
-            render: (s: string) => (
-                <Tag
-                    color={
-                        s === "Completed"
-                            ? "default"
-                            : s === "Pending"
-                                ? "gold"
-                                : "green"
-                    }
-                >
+            render: (s: BookingStatus) => (
+                <Tag color={statusColor[s]}>
                     {s}
                 </Tag>
             ),
@@ -77,53 +146,46 @@ function EmployeeDashboard() {
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={menuItems}
-                userName="Employee User"
-                userRole="Employee"
-            />
+            <Sidebar />
 
             <Content className="p-4 md:p-6 md:ml-64">
                 <h1 className="text-xl md:text-2xl font-semibold mb-6">
                     Employee Dashboard
                 </h1>
 
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {[
-                        {
-                            label: "Total Bookings",
-                            value: bookings.length,
-                        },
-                        {
-                            label: "Today's Bookings",
-                            value: todaysData.length,
-                        },
-                        {
-                            label: "Pending",
-                            value: bookings.filter(
-                                (b) => b.status === "Pending"
-                            ).length,
-                        },
-                        {
-                            label: "Confirmed",
-                            value: bookings.filter(
-                                (b) => b.status === "Confirmed"
-                            ).length,
-                        },
-                    ].map((item, idx) => (
-                        <Card
-                            key={idx}
-                            className="rounded-xl shadow-md"
-                        >
-                            <p className="text-gray-500 text-sm">
-                                {item.label}
-                            </p>
-                            <p className="text-xl md:text-2xl font-semibold mt-1">
-                                {item.value}
-                            </p>
-                        </Card>
-                    ))}
+
+                    <Card className="rounded-xl shadow-md">
+                        <p className="text-gray-500 text-sm">Total Bookings</p>
+                        <p className="text-xl md:text-2xl font-semibold mt-1">
+                            {stats.total}
+                        </p>
+                    </Card>
+
+                    <Card className="rounded-xl shadow-md">
+                        <p className="text-gray-500 text-sm">Today's Bookings</p>
+                        <p className="text-xl md:text-2xl font-semibold mt-1">
+                            {stats.today}
+                        </p>
+                    </Card>
+
+                    <Card className="rounded-xl shadow-md">
+                        <p className="text-gray-500 text-sm">Pending</p>
+                        <p className="text-xl md:text-2xl font-semibold mt-1">
+                            {stats.pending}
+                        </p>
+                    </Card>
+
+                    <Card className="rounded-xl shadow-md">
+                        <p className="text-gray-500 text-sm">Confirmed</p>
+                        <p className="text-xl md:text-2xl font-semibold mt-1">
+                            {stats.confirmed}
+                        </p>
+                    </Card>
+
                 </div>
+
 
                 <Card className="rounded-xl shadow-md">
                     <h2 className="text-lg font-medium mb-4">
@@ -139,6 +201,7 @@ function EmployeeDashboard() {
                             columns={columns}
                             dataSource={todaysData}
                             rowKey="id"
+                            loading={loading}
                             pagination={false}
                             scroll={{ x: 900 }}
                         />

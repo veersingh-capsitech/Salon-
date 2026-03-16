@@ -20,11 +20,6 @@ import {
     PlusOutlined,
     UserOutlined,
     DeleteOutlined,
-    AppstoreOutlined,
-    CalendarOutlined,
-    ScissorOutlined,
-    TeamOutlined,
-    ApartmentOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 
@@ -56,7 +51,6 @@ function Employees() {
 
     const [form] = Form.useForm();
 
-    /* ================= SALON ID ================= */
 
     useEffect(() => {
         const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -87,7 +81,6 @@ function Employees() {
         }
     };
 
-    /* ================= LOAD EMPLOYEES ================= */
 
     const loadEmployees = async () => {
         try {
@@ -145,27 +138,39 @@ function Employees() {
             };
 
             if (editingEmployee) {
-                await fetch(
+                const res = await fetch(
                     `http://localhost:3500/api/auth/employees/${editingEmployee.id}`,
                     {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" ,
+                        headers: {
+                            "Content-Type": "application/json",
                             Authorization: `Bearer ${localStorage.getItem("token")}`,
                         },
                         body: JSON.stringify(payload),
                     }
                 );
-                message.success("Employee updated");
+                const data = await res.json();
+                if (!res.ok) {
+                    message.error(data.message || "Failed to add employee");
+                } else {
+                    message.success("Employee added");
+                }
             } else {
-                await fetch("http://localhost:3500/api/auth/employees", {
+                const res = await fetch("http://localhost:3500/api/auth/employees", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json",
+                    headers: {
+                        "Content-Type": "application/json",
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
-                     },
+                    },
 
                     body: JSON.stringify(payload),
                 });
-                message.success("Employee added");
+                const data = await res.json();
+                if (!res.ok) {
+                    message.error(data.message || "Failed to add employee");
+                } else {
+                    message.success("Employee added");
+                }
             }
 
             setIsModalVisible(false);
@@ -208,17 +213,7 @@ function Employees() {
 
     return (
         <Layout rootClassName="min-h-screen !bg-slate-100">
-            <Sidebar
-                items={[
-                    { key: "dashboard", icon: <AppstoreOutlined />, label: "Dashboard", path: "/admin" },
-                    { key: "bookings", icon: <CalendarOutlined />, label: "Bookings", path: "/admin/bookings" },
-                    { key: "services", icon: <ScissorOutlined />, label: "Services", path: "/admin/services" },
-                    { key: "employees", icon: <TeamOutlined />, label: "Employees", path: "/admin/employees" },
-                    { key: "companyProfile", icon: <ApartmentOutlined />, label: "Company Profile", path: "/admin/company-profile" },
-                ]}
-                userName="Admin User"
-                userRole="Admin"
-            />
+            <Sidebar/>
 
             <Content className="p-4 md:p-6 md:ml-64">
 
